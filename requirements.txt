@@ -1,7 +1,8 @@
 aiogram==3.20.0.post0
-telebot==0.0.5
+pytelegrambotapi==4.14.1      # вместо telebot==0.0.5 (telebot устарел → ставим pytelegrambotapi)
 selenium==4.32.0
 pandas==2.2.3
 webdriver-manager==4.0.2
 openai==1.77.0
 openpyxl==3.1.2
+python-dotenv==1.0.1           # чтобы .env считывался (обязателен)

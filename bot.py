@@ -7,7 +7,7 @@ from aiohttp import web
 from dotenv import load_dotenv
 import subprocess
 
-# Загружаем .env
+# Загрузка .env
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
@@ -18,6 +18,7 @@ if not TOKEN or not WEBHOOK_URL:
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
+# Меню кнопки
 menu_kb = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Товары')],
     [KeyboardButton(text='Услуги')],
@@ -67,12 +68,14 @@ async def handle_message(message: types.Message):
     else:
         await message.answer("❗ Пожалуйста, выбери категорию с кнопки.", reply_markup=menu_kb)
 
+# Хуки запуска/остановки
 async def on_startup(app):
     await bot.set_webhook(WEBHOOK_URL)
 
 async def on_shutdown(app):
     await bot.delete_webhook()
 
+# Настройка Aiohttp приложения
 app = web.Application()
 SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/webhook")
 app.on_startup.append(on_startup)

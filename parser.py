@@ -22,11 +22,12 @@ CATEGORIES = {"товары": "CP", "услуги": "CS", "работы": "CW"}
 
 def get_driver():
     options = webdriver.ChromeOptions()
-    options.binary_location = "/usr/bin/chromium-browser"
+    # ✅ Эти настройки важны для сервера Render
+    options.binary_location = "/usr/bin/chromium"
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--start-maximized")
+    options.add_argument("--window-size=1920,1080")
     return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
 def select_category(driver, category):
@@ -103,9 +104,9 @@ def main():
         category = input("Выберите категорию: ").lower()
     open(JSON_FILE, "w", encoding="utf-8").write("[]")
     driver = get_driver()
-    select_category(driver, category)
     tenders = []
     try:
+        select_category(driver, category)
         tenders = scrape_tenders(driver)
     except KeyboardInterrupt:
         logging.info("Остановка по Ctrl+C")
