@@ -1,4 +1,3 @@
-import asyncio
 import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
@@ -10,16 +9,15 @@ import subprocess
 
 # Загружаем .env
 load_dotenv()
-TOKEN = os.getenv("TELEGRAM_TOKEN")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://tender-bot.onrender.com/webhook")
+TOKEN = os.getenv("TOKEN")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
-if not TOKEN:
-    raise ValueError("❌ TOKEN is missing! Check your .env file or environment settings.")
+if not TOKEN or not WEBHOOK_URL:
+    raise ValueError("❌ TOKEN or WEBHOOK_URL is missing! Check your environment settings.")
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Кнопки меню
 menu_kb = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Товары')],
     [KeyboardButton(text='Услуги')],
@@ -50,7 +48,7 @@ async def handle_message(message: types.Message):
                     await bot.send_document(message.chat.id, file)
                 await message.answer("✅ Результаты отправлены!")
             else:
-                await message.answer("⚠️ Файл tenders.xlsx не найден.")
+                await message.answer("⚠️ Файл tenders.xlsx не найден. Возможно, парсер ничего не нашёл.")
         except subprocess.CalledProcessError as e:
             await message.answer(f"❌ Ошибка запуска парсера:\n{e}")
         finally:
@@ -58,7 +56,7 @@ async def handle_message(message: types.Message):
     elif text == 'стоп 🛑':
         if process_running:
             process_running = False
-            await message.answer("🛑 Парсер остановлен.\nОтправляю текущие результаты:")
+            await message.answer("🛑 Парсер остановлен.\nФайл с текущими результатами:")
             if os.path.exists('tenders.xlsx'):
                 with open('tenders.xlsx', 'rb') as file:
                     await bot.send_document(message.chat.id, file)
@@ -69,20 +67,16 @@ async def handle_message(message: types.Message):
     else:
         await message.answer("❗ Пожалуйста, выбери категорию с кнопки.", reply_markup=menu_kb)
 
-async def on_startup(bot: Bot):
+async def on_startup(app):
     await bot.set_webhook(WEBHOOK_URL)
 
-async def on_shutdown(bot: Bot):
+async def on_shutdown(app):
     await bot.delete_webhook()
 
-async def main():
-    app = web.Application()
-    dp.startup.register(on_startup)
-    dp.shutdown.register(on_shutdown)
-    webhook_handler = SimpleRequestHandler(dispatcher=dp, bot=bot)
-    webhook_handler.register(app, path="/webhook")
-    setup_application(app, dp)
-    return app
+app = web.Application()
+SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/webhook")
+app.on_startup.append(on_startup)
+app.on_shutdown.append(on_shutdown)
 
-if __name__ == '__main__':
-    web.run_app(main(), host="0.0.0.0", port=int(os.getenv('PORT', 10000)))
+if __name__ == "__main__":
+    web.run_app(app, port=int(os.environ.get("PORT", 8080)))
