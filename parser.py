@@ -22,6 +22,10 @@ CATEGORIES = {"товары": "CP", "услуги": "CS", "работы": "CW"}
 
 def get_driver():
     options = webdriver.ChromeOptions()
+    options.binary_location = "/usr/bin/chromium-browser"
+    options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--start-maximized")
     return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
@@ -100,6 +104,7 @@ def main():
     open(JSON_FILE, "w", encoding="utf-8").write("[]")
     driver = get_driver()
     select_category(driver, category)
+    tenders = []
     try:
         tenders = scrape_tenders(driver)
     except KeyboardInterrupt:
