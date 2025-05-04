@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: tender-bot
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    envVars:
+      - key: TELEGRAM_TOKEN
+        value: твой_бот_токен
+      - key: OPENAI_API_KEY
+        value: твой_openai_ключ (если нужно)

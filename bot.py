@@ -5,7 +5,7 @@ from aiogram.filters import Command
 import subprocess
 import os
 
-TOKEN = "ТОКЕН_СЮДА"  # замените на свой токен
+TOKEN = os.getenv("TELEGRAM_TOKEN")  # замените на свой токен
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
