@@ -1,24 +1,25 @@
+import asyncio
 import os
+import json
+import pandas as pd
+import subprocess
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.filters import Command
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler
 from aiohttp import web
 from dotenv import load_dotenv
-import subprocess
 
-# Загрузка .env
+# Load .env
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
 if not TOKEN or not WEBHOOK_URL:
-    raise ValueError("❌ TOKEN or WEBHOOK_URL is missing! Check your environment settings.")
+    raise ValueError("❌ TOKEN or WEBHOOK_URL is missing! Check your .env file or environment settings.")
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
-
-# Меню кнопки
 menu_kb = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Товары')],
     [KeyboardButton(text='Услуги')],
@@ -26,7 +27,7 @@ menu_kb = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Стоп 🛑')]
 ], resize_keyboard=True)
 
-process_running = False
+process_flag_file = "status.flag"
 
 @dp.message(Command('start'))
 async def start(message: types.Message):
@@ -34,16 +35,14 @@ async def start(message: types.Message):
 
 @dp.message()
 async def handle_message(message: types.Message):
-    global process_running
     text = message.text.lower()
-
     if text in ['товары', 'услуги', 'работы']:
-        if process_running:
+        if os.path.exists(process_flag_file):
             await message.answer("⚙️ Парсер уже работает, дождись завершения или нажми 'Стоп 🛑'.")
             return
 
         await message.answer(f"🚀 Запускаю парсер для категории: {text.capitalize()}")
-        process_running = True
+        open(process_flag_file, 'w').close()
         try:
             subprocess.run(['python', 'parser.py', text], check=True)
             if os.path.exists('tenders.xlsx'):
@@ -55,16 +54,16 @@ async def handle_message(message: types.Message):
         except subprocess.CalledProcessError as e:
             await message.answer(f"❌ Ошибка запуска парсера:\n{e}")
         finally:
-            process_running = False
+            if os.path.exists(process_flag_file):
+                os.remove(process_flag_file)
 
     elif text == 'стоп 🛑':
-        if process_running:
-            process_running = False
+        if os.path.exists(process_flag_file):
+            os.remove(process_flag_file)
             await message.answer("🛑 Парсер остановлен.\nФайл с текущими результатами:")
             if os.path.exists('tenders.xlsx'):
                 with open('tenders.xlsx', 'rb') as file:
                     await bot.send_document(message.chat.id, file)
-                await message.answer("✅ Текущие результаты отправлены.")
             else:
                 await message.answer("⚠️ Файл tenders.xlsx не найден.")
         else:
@@ -73,14 +72,12 @@ async def handle_message(message: types.Message):
     else:
         await message.answer("❗ Пожалуйста, выбери категорию с кнопки.", reply_markup=menu_kb)
 
-# Хуки запуска/остановки
 async def on_startup(app):
     await bot.set_webhook(WEBHOOK_URL)
 
 async def on_shutdown(app):
     await bot.delete_webhook()
 
-# Настройка Aiohttp приложения
 app = web.Application()
 SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/webhook")
 app.on_startup.append(on_startup)
