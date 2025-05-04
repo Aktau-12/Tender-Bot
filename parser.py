@@ -11,8 +11,15 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
-# Логирование
-logging.basicConfig(filename='log.txt', level=logging.INFO, format='%(asctime)s %(message)s')
+# Логирование в файл + консоль
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(message)s",
+    handlers=[
+        logging.FileHandler("log.txt"),
+        logging.StreamHandler()
+    ]
+)
 
 SITE_URL = "https://zakup.sk.kz/#/ext"
 JSON_FILE = "tenders.json"
@@ -21,8 +28,10 @@ STOP_FILE = "stop.flag"
 CATEGORIES = {"товары": "CP", "услуги": "CS", "работы": "CW"}
 
 def get_driver():
+    if not os.path.exists("/usr/bin/chromium"):
+        raise EnvironmentError("❌ Chromium не найден! Установите chromium-browser и chromium-chromedriver.")
+
     options = webdriver.ChromeOptions()
-    # ✅ Эти настройки важны для сервера Render
     options.binary_location = "/usr/bin/chromium"
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
@@ -110,6 +119,9 @@ def main():
         tenders = scrape_tenders(driver)
     except KeyboardInterrupt:
         logging.info("Остановка по Ctrl+C")
+    except Exception as e:
+        logging.error(f"❌ Неожиданная ошибка: {e}")
+        time.sleep(10)
     finally:
         driver.quit()
         if os.path.exists(STOP_FILE):

@@ -36,10 +36,12 @@ async def start(message: types.Message):
 async def handle_message(message: types.Message):
     global process_running
     text = message.text.lower()
+
     if text in ['товары', 'услуги', 'работы']:
         if process_running:
             await message.answer("⚙️ Парсер уже работает, дождись завершения или нажми 'Стоп 🛑'.")
             return
+
         await message.answer(f"🚀 Запускаю парсер для категории: {text.capitalize()}")
         process_running = True
         try:
@@ -54,6 +56,7 @@ async def handle_message(message: types.Message):
             await message.answer(f"❌ Ошибка запуска парсера:\n{e}")
         finally:
             process_running = False
+
     elif text == 'стоп 🛑':
         if process_running:
             process_running = False
@@ -61,10 +64,12 @@ async def handle_message(message: types.Message):
             if os.path.exists('tenders.xlsx'):
                 with open('tenders.xlsx', 'rb') as file:
                     await bot.send_document(message.chat.id, file)
+                await message.answer("✅ Текущие результаты отправлены.")
             else:
                 await message.answer("⚠️ Файл tenders.xlsx не найден.")
         else:
             await message.answer("ℹ️ Парсер сейчас не запущен.")
+
     else:
         await message.answer("❗ Пожалуйста, выбери категорию с кнопки.", reply_markup=menu_kb)
 
