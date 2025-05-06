@@ -10,6 +10,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
+import shutil
 
 # Логирование
 logging.basicConfig(filename='log.txt', level=logging.INFO, format='%(asctime)s %(message)s')
@@ -22,8 +23,19 @@ CATEGORIES = {"товары": "CP", "услуги": "CS", "работы": "CW"}
 
 def get_driver():
     options = webdriver.ChromeOptions()
-    # ↑ Заменили путь к бинарнику на корректный в контейнере Render
-    options.binary_location = "/usr/bin/chromium-browser"
+    # Автоматически ищем бинарник Chrome/Chromium в $PATH
+    chrome_path = (
+        shutil.which("google-chrome") or
+        shutil.which("google-chrome-stable") or
+        shutil.which("chromium-browser") or
+        shutil.which("chromium") or
+        shutil.which("chrome")
+    )
+    if chrome_path:
+        options.binary_location = chrome_path
+        logging.info(f"Используем Chrome-бинарник: {chrome_path}")
+    else:
+        logging.warning("Chrome-бинарник не найден: пробуем без явного пути")
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
@@ -35,7 +47,9 @@ def select_category(driver, category):
     time.sleep(10)
     try:
         checkbox = WebDriverWait(driver, 20).until(
-            EC.presence_of_element_located((By.XPATH, f"//label[contains(text(), '{category.capitalize()}')]"))
+            EC.presence_of_element_located(
+                (By.XPATH, f"//label[contains(text(), '{category.capitalize()}')]")
+            )
         )
         driver.execute_script("arguments[0].click();", checkbox)
         time.sleep(2)
@@ -62,7 +76,10 @@ def scrape_tenders(driver):
             try:
                 title = elem.find_element(By.CLASS_NAME, "m-found-item__title").text.strip()
                 price = elem.find_element(By.CLASS_NAME, "m-span--dark").text.strip()
-                days_left = elem.find_element(By.XPATH, ".//div[contains(@class, 'm-found-item__col')]/span/span").text.strip()
+                days_left = elem.find_element(
+                    By.XPATH,
+                    ".//div[contains(@class, 'm-found-item__col')]/span/span"
+                ).text.strip()
                 tender = {
                     "Название": title,
                     "Стоимость": price,
