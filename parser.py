@@ -22,7 +22,8 @@ CATEGORIES = {"товары": "CP", "услуги": "CS", "работы": "CW"}
 
 def get_driver():
     options = webdriver.ChromeOptions()
-    options.binary_location = "/usr/bin/chromium"  # ✅ Render: бинарник хрома
+    # ↑ Заменили путь к бинарнику на корректный в контейнере Render
+    options.binary_location = "/usr/bin/chromium-browser"
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")

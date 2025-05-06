@@ -5,7 +5,7 @@ services:
     plan: free
     buildCommand: |
       apt-get update &&
-      apt-get install -y chromium chromium-driver &&
+      apt-get update && apt-get install -y chromium-browser chromium-driver
       pip install --upgrade pip &&
       pip install -r requirements.txt
     startCommand: python bot.py
